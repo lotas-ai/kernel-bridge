@@ -104,7 +104,6 @@ export class ZMQSocketManager extends EventEmitter {
   }
 
   async sendMessage(channel: string, message: JupyterMessage): Promise<void> {
-    console.log(`[ZMQ-OUT] ${this.sessionId} Sending message to ${channel}:`, JSON.stringify(message, null, 2));
     
     if (this.isClosing) {
       console.log(`[ZMQ-ERROR] ${this.sessionId} Cannot send message - socket manager is closing`);
@@ -113,16 +112,13 @@ export class ZMQSocketManager extends EventEmitter {
 
     try {
       const frames = this.serializeMessage(message);
-      console.log(`[ZMQ-OUT] ${this.sessionId} Serialized to ${frames.length} frames for ${channel}`);
       
       switch (channel) {
         case 'shell':
           await this.shellSocket.send(frames);
-          console.log(`[ZMQ-OUT] ${this.sessionId} Message sent to shell socket`);
           break;
         case 'control':
           await this.controlSocket.send(frames);
-          console.log(`[ZMQ-OUT] ${this.sessionId} Message sent to control socket`);
           break;
         case 'stdin':
           await this.stdinSocket.send(frames);

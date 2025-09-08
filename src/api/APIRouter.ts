@@ -303,7 +303,7 @@ export class APIRouter {
 
   private async getSession(req: Request, res: Response): Promise<void> {
     try {
-      const { sessionId } = req.params;
+      const sessionId = req.params.session_id;
 
       if (!this.isValidSessionId(sessionId)) {
         this.sendError(res, 400, 'Invalid Session ID', 'Session ID must be a valid UUID or Erdos session ID format');
@@ -371,7 +371,7 @@ export class APIRouter {
 
   private async restartSession(req: Request, res: Response): Promise<void> {
     try {
-      const { sessionId } = req.params;
+      const sessionId = req.params.session_id;
 
       if (!this.isValidSessionId(sessionId)) {
         this.sendError(res, 400, 'Invalid Session ID', 'Session ID must be a valid UUID or Erdos session ID format');
@@ -401,7 +401,7 @@ export class APIRouter {
 
   private async deleteSession(req: Request, res: Response): Promise<void> {
     try {
-      const { sessionId } = req.params;
+      const sessionId = req.params.session_id;
 
       if (!this.isValidSessionId(sessionId)) {
         this.sendError(res, 400, 'Invalid Session ID', 'Session ID must be a valid UUID or Erdos session ID format');
@@ -430,7 +430,7 @@ export class APIRouter {
 
   private async interruptSession(req: Request, res: Response): Promise<void> {
     try {
-      const { sessionId } = req.params;
+      const sessionId = req.params.session_id;
 
       if (!this.isValidSessionId(sessionId)) {
         this.sendError(res, 400, 'Invalid Session ID', 'Session ID must be a valid UUID or Erdos session ID format');
