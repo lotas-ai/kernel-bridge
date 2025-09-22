@@ -304,7 +304,7 @@ export class KernelProcessManager extends EventEmitter {
         } catch (error) {
           // File doesn't exist yet, keep checking
           if (Date.now() - startTime < timeout) {
-            setTimeout(checkReady, 100);
+            setTimeout(checkReady, 500);
           } else {
             clearTimeout(timeoutId);
             reject(new Error(`Kernel failed to create connection file: ${error}`));
@@ -313,7 +313,7 @@ export class KernelProcessManager extends EventEmitter {
       };
 
       // Start checking after a brief delay
-      setTimeout(checkReady, 100);
+      setTimeout(checkReady, 500);
     });
   }
 

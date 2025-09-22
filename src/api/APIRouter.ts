@@ -803,7 +803,8 @@ export class APIRouter {
       connection_timeout,
       interrupt_mode,
       protocol_version,
-      run_in_shell
+      run_in_shell,
+      kernel_startup_timeout
     } = kernelBridgeBody;
 
     // Convert to kernel-bridge format
@@ -820,7 +821,8 @@ export class APIRouter {
           continuation_prompt: continuation_prompt || '... ',
           protocol_version: protocol_version || '5.3',
           connection_timeout: connection_timeout || 30,
-          run_in_shell: run_in_shell || false
+          run_in_shell: run_in_shell || false,
+          kernel_startup_timeout: kernel_startup_timeout || 60000
         }
       },
       kernel_spec: {

@@ -47,7 +47,7 @@ export class WebSocketHandler extends EventEmitter {
     this.sessionId = sessionId;
     this.options = {
       heartbeatInterval: 30000, // 30 seconds
-      messageTimeout: 10000, // 10 seconds
+      messageTimeout: 30000, // 30 seconds
       maxMessageSize: 10 * 1024 * 1024, // 10MB
       pingInterval: 15000, // 15 seconds
       enableCompression: true,

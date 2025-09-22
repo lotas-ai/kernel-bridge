@@ -33,6 +33,7 @@ export interface SessionContext {
   kernelReady: boolean;
   kernelType: KernelType;
   kernelInfo?: any; // Store kernel_info_reply content
+  kernelStartupTimeout: number; // Configurable kernel startup timeout
 }
 
 export interface PendingRequest {
@@ -102,6 +103,9 @@ export class SessionManager extends EventEmitter {
     });
 
     try {
+      // Extract kernel startup timeout from runtime metadata
+      const kernelStartupTimeout = runtimeMetadata.extraRuntimeData?.kernel_startup_timeout || 60000;
+      
       // Generate connection information
       const connectionInfo = await this.generateConnectionInfo();
       
@@ -118,7 +122,7 @@ export class SessionManager extends EventEmitter {
 
       // Start kernel process
       const processInfo = await this.processManager.startKernel(session, {
-        timeout: kernelSpec.language?.toLowerCase() === 'r' ? 45000 : 30000, // Ark needs more time
+        timeout: kernelStartupTimeout,
         retries: 2
       });
       
@@ -129,7 +133,7 @@ export class SessionManager extends EventEmitter {
       const zmqManager = new ZMQSocketManager(sessionId, connectionInfo);
       
       // Wait for ZMQ sockets to be ready
-      await this.waitForZMQReady(zmqManager, kernelSpec.language?.toLowerCase() === 'r' ? 5000 : 3000);
+      await this.waitForZMQReady(zmqManager, 5000); // 5 seconds for both Python and R
 
       // Create session context
       const context: SessionContext = {
@@ -141,7 +145,8 @@ export class SessionManager extends EventEmitter {
         lastActivity: now,
         createdAt: now,
         kernelReady: false,
-        kernelType
+        kernelType,
+        kernelStartupTimeout
       };
 
       // Store session context first so initializeKernelConnection can find it
@@ -308,7 +313,7 @@ export class SessionManager extends EventEmitter {
           ...context.session,
           connectionInfo: newConnectionInfo
         }, {
-          timeout: context.kernelType?.toLowerCase() === 'r' ? 45000 : 30000,
+          timeout: context.kernelStartupTimeout,
           retries: 2
         });
         
@@ -368,6 +373,9 @@ export class SessionManager extends EventEmitter {
             this.emit('session_shutdown_zmq_error', { sessionId, error });
           }
         }
+
+        // Send exit status to WebSocket clients BEFORE closing them
+        this.broadcastStatusToWebSocketClients(sessionId, 'exited', restart ? 'Session restarting' : 'Session deleted');
 
         // Close WebSocket clients
         context.webSocketClients.forEach(ws => {
@@ -897,7 +905,7 @@ export class SessionManager extends EventEmitter {
         context.session.sessionId, 
         'shell', 
         kernelInfoMessage,
-        10000 // 10 second timeout for kernel info
+        30000 // 30 second timeout for kernel info
       );
     } catch (error) {
       this.emit('session_init_error', { 
