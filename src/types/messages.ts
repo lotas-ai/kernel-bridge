@@ -89,7 +89,7 @@ export interface IsCompleteReply {
   indent: string;                       // ARK DIFFERENCE: Always present, not optional
 }
 
-// Comm Messages (for LSP, UI, plots, variables, help, connections)
+// Comm Messages (for LSP, UI, plots, variables, help, environment, connections)
 export interface CommOpen {
   comm_id: string;
   target_name: string;
