@@ -32,8 +32,12 @@ export class ZMQSocketManager extends EventEmitter {
     try {
       const { ip, transport } = this.connectionInfo;
       
+      // Create consistent identity for all DEALER sockets using sessionId
+      const dealerIdentity = this.sessionId;
+      
       // Shell socket - for execute_request, complete_request, etc.
       this.shellSocket = new zmq.Dealer();
+      this.shellSocket.routingId = dealerIdentity;
       await this.shellSocket.connect(`${transport}://${ip}:${this.connectionInfo.shell_port}`);
       this.startMessageHandler('shell', this.shellSocket, this.handleShellMessage.bind(this));
 
@@ -45,11 +49,13 @@ export class ZMQSocketManager extends EventEmitter {
 
       // Control socket - for interrupt_request, shutdown_request, etc.
       this.controlSocket = new zmq.Dealer();
+      this.controlSocket.routingId = dealerIdentity;
       await this.controlSocket.connect(`${transport}://${ip}:${this.connectionInfo.control_port}`);
       this.startMessageHandler('control', this.controlSocket, this.handleControlMessage.bind(this));
 
       // Stdin socket - for input_request/input_reply
       this.stdinSocket = new zmq.Dealer();
+      this.stdinSocket.routingId = dealerIdentity;
       await this.stdinSocket.connect(`${transport}://${ip}:${this.connectionInfo.stdin_port}`);
       this.startMessageHandler('stdin', this.stdinSocket, this.handleStdinMessage.bind(this));
 
@@ -74,9 +80,7 @@ export class ZMQSocketManager extends EventEmitter {
     const handleMessages = async () => {
       while (!this.isClosing) {
         try {
-          console.log(`[ZMQ-WAIT] ${this.sessionId} Waiting for message on ${channel} channel`);
           const frames = await (socket as any).receive();
-          console.log(`[ZMQ-IN] ${this.sessionId} Received ${frames.length} frames on ${channel} channel`);
           
           const messagePromise = handler(frames);
           this.messageHandlers.add(messagePromise);
@@ -88,7 +92,6 @@ export class ZMQSocketManager extends EventEmitter {
           await messagePromise;
         } catch (error) {
           if (!this.isClosing) {
-            console.log(`[ZMQ-ERROR] ${this.sessionId} Message error on ${channel}:`, error);
             this.emit('message_error', { channel, error });
           }
           break;
@@ -106,7 +109,6 @@ export class ZMQSocketManager extends EventEmitter {
   async sendMessage(channel: string, message: JupyterMessage): Promise<void> {
     
     if (this.isClosing) {
-      console.log(`[ZMQ-ERROR] ${this.sessionId} Cannot send message - socket manager is closing`);
       throw new Error('Socket manager is closing');
     }
 
@@ -171,7 +173,6 @@ export class ZMQSocketManager extends EventEmitter {
   private async handleShellMessage(frames: Buffer[]): Promise<void> {
     try {
       const message = this.deserializeMessage(frames);
-      console.log(`[ZMQ-PARSE] ${this.sessionId} Parsed shell message:`, JSON.stringify(message, null, 2));
       this.emit('shell_message', message);
     } catch (error) {
       console.log(`[ZMQ-ERROR] ${this.sessionId} Shell message deserialization error:`, error);
@@ -182,7 +183,6 @@ export class ZMQSocketManager extends EventEmitter {
   private async handleIOPubMessage(frames: Buffer[]): Promise<void> {
     try {
       const message = this.deserializeMessage(frames);
-      console.log(`[ZMQ-PARSE] ${this.sessionId} Parsed iopub message:`, JSON.stringify(message, null, 2));
       this.emit('iopub_message', message);
     } catch (error) {
       console.log(`[ZMQ-ERROR] ${this.sessionId} IOPub message deserialization error:`, error);
@@ -193,7 +193,6 @@ export class ZMQSocketManager extends EventEmitter {
   private async handleControlMessage(frames: Buffer[]): Promise<void> {
     try {
       const message = this.deserializeMessage(frames);
-      console.log(`[ZMQ-PARSE] ${this.sessionId} Parsed control message:`, JSON.stringify(message, null, 2));
       this.emit('control_message', message);
     } catch (error) {
       console.log(`[ZMQ-ERROR] ${this.sessionId} Control message deserialization error:`, error);

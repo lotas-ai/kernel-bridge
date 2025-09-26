@@ -190,7 +190,6 @@ export class WebSocketHandler extends EventEmitter {
   }
 
   private async handleIncomingMessage(message: any): Promise<void> {
-    console.log(`[WS-IN] ${this.sessionId} Received message:`, JSON.stringify(message, null, 2));
     
     try {
       // Validate message structure
@@ -454,11 +453,15 @@ export class WebSocketHandler extends EventEmitter {
 
   sendJupyterMessage(channel: string, jupyterMessage: JupyterMessage): boolean {
     // ERDOS COMPATIBILITY: Use 'kind' field instead of 'type' for Jupyter messages
-    // Erdos expects {kind: 'jupyter'} format, not {type: 'jupyter_message'}
+    // Erdos expects {kind: 'jupyter'} format with specific field mapping
     const wsMessage = {
       kind: 'jupyter',
       channel: channel as any,
-      ...jupyterMessage  // Spread the Jupyter message fields directly
+      header: jupyterMessage.header,
+      parent_header: jupyterMessage.parent_header,
+      metadata: jupyterMessage.metadata,
+      content: jupyterMessage.content,
+      buffers: []  // VSCode Erdos expects buffers field, kernel-bridge doesn't have it
     };
 
     return this.send(wsMessage);
