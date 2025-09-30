@@ -117,6 +117,9 @@ function parseCommandLineArgs() {
     } else if (args[i] === '--log-file' && i + 1 < args.length) {
       parsed['log-file'] = args[i + 1];
       i++; // Skip next argument as it's the value
+    } else if (args[i] === '--temp-dir' && i + 1 < args.length) {
+      parsed['temp-dir'] = args[i + 1];
+      i++; // Skip next argument as it's the value
     }
   }
   
@@ -223,7 +226,21 @@ async function main() {
   const bearerToken = generateSecureBearerToken();
   logger.log(`Generated secure bearer token for API authentication`);
 
-  const server = new KernelBridgeServer({ port, logger, bearerToken });
+  // Temp directory must be provided from command line (like Positron does)
+  const tempDir = args['temp-dir'];
+  if (!tempDir) {
+    logger.error('--temp-dir argument is required');
+    process.exit(1);
+  }
+  
+  logger.log(`Using temp directory from command line: ${tempDir}`);
+
+  const server = new KernelBridgeServer({ 
+    port, 
+    logger, 
+    bearerToken,
+    sessionManagerOptions: { tempDir }
+  });
 
   // Graceful shutdown handling
   process.on('SIGINT', async () => {

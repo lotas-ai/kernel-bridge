@@ -37,9 +37,9 @@ export class KernelProcessManager extends EventEmitter {
     killSignalTimeout: 5000
   };
 
-  constructor(tempDir?: string) {
+  constructor(tempDir: string) {
     super();
-    this.tempDir = tempDir || path.join(process.cwd(), 'temp', 'kernels');
+    this.tempDir = tempDir;
     this.ensureTempDir();
   }
 

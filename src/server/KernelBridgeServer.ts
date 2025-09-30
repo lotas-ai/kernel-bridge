@@ -35,6 +35,7 @@ export interface KernelBridgeServerOptions {
   requestSizeLimit?: string;
   logger?: ServerLogger;
   bearerToken?: string;
+  sessionManagerOptions?: { tempDir: string };
 }
 
 export interface ServerMetrics {
@@ -54,7 +55,7 @@ export class KernelBridgeServer extends EventEmitter {
   private wss!: WebSocket.Server;
   private sessionManager: SessionManager;
   private apiRouter: APIRouter;
-  private options: Required<Omit<KernelBridgeServerOptions, 'logger' | 'bearerToken'>>;
+  private options: Required<Omit<KernelBridgeServerOptions, 'logger' | 'bearerToken' | 'sessionManagerOptions'>>;
   private logger: ServerLogger;
   private bearerToken: string | undefined;
   private metrics: ServerMetrics;
@@ -113,7 +114,15 @@ export class KernelBridgeServer extends EventEmitter {
 
     this.app = express();
     this.server = http.createServer(this.app);
+    
+    // SessionManagerOptions requires tempDir
+    const tempDir = options?.sessionManagerOptions?.tempDir;
+    if (!tempDir) {
+      throw new Error('sessionManagerOptions.tempDir is required');
+    }
+    
     this.sessionManager = new SessionManager({
+      tempDir: tempDir,
       maxSessions: 100,
       sessionTimeout: 3600000, // 1 hour
       heartbeatInterval: this.options.heartbeatInterval

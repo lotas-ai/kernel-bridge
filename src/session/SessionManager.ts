@@ -52,28 +52,29 @@ export interface SessionManagerOptions {
   requestTimeout?: number; // Individual request timeout in milliseconds
   heartbeatInterval?: number; // Heartbeat check interval
   portRange?: { min: number; max: number }; // Port allocation range
+  tempDir: string; // Temporary directory for kernel connection files (must be provided)
 }
 
 export class SessionManager extends EventEmitter {
   private sessions: Map<string, SessionContext> = new Map();
   private processManager: KernelProcessManager;
-  private options: Required<SessionManagerOptions>;
+  private options: SessionManagerOptions & { maxSessions: number; sessionTimeout: number; requestTimeout: number; heartbeatInterval: number; portRange: { min: number; max: number } };
   private sessionTimeoutInterval: NodeJS.Timeout | null = null;
   private portAllocationLock = new Set<number>(); // Prevent port conflicts
 
-  constructor(options?: SessionManagerOptions) {
+  constructor(options: SessionManagerOptions) {
     super();
     
     this.options = {
-      maxSessions: 50,
-      sessionTimeout: 3600000, // 1 hour
-      requestTimeout: 30000, // 30 seconds
-      heartbeatInterval: 30000, // 30 seconds
-      portRange: { min: 49152, max: 65535 }, // Ephemeral port range
-      ...options
+      maxSessions: options.maxSessions ?? 50,
+      sessionTimeout: options.sessionTimeout ?? 3600000, // 1 hour
+      requestTimeout: options.requestTimeout ?? 30000, // 30 seconds
+      heartbeatInterval: options.heartbeatInterval ?? 30000, // 30 seconds
+      portRange: options.portRange ?? { min: 49152, max: 65535 }, // Ephemeral port range
+      tempDir: options.tempDir
     };
 
-    this.processManager = new KernelProcessManager();
+    this.processManager = new KernelProcessManager(this.options.tempDir);
     this.setupProcessManagerEvents();
     this.startSessionMonitoring();
   }
